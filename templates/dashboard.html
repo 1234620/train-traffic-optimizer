@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Traffic Throughput Maximization System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 30px 0;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #fff, #f0f8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-item {
+            text-align: center;
+            color: white;
+        }
+
+        .status-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .status-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+            color: #667eea;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .metric {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .decision {
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .decision:hover {
+            transform: translateX(5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .decision.critical {
+            border-left-color: #e74c3c;
+            background: linear-gradient(135deg, #fdf2f2, #ffffff);
+        }
+
+        .decision.high {
+            border-left-color: #f39c12;
+            background: linear-gradient(135deg, #fef9e7, #ffffff);
+        }
+
+        .decision.medium {
+            border-left-color: #3498db;
+            background: linear-gradient(135deg, #ebf8ff, #ffffff);
+        }
+
+        .decision.low {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, #f0f9f0, #ffffff);
+        }
+
+        .decision-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .decision-type {
+            font-weight: 700;
+            color: #2c3e50;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .decision-priority {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-critical {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .priority-high {
+            background: #f39c12;
+            color: white;
+        }
+
+        .priority-medium {
+            background: #3498db;
+            color: white;
+        }
+
+        .priority-low {
+            background: #27ae60;
+            color: white;
+        }
+
+        .decision-action {
+            color: #34495e;
+            margin-bottom: 8px;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .decision-impact {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .decision-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #95a5a6;
+        }
+
+        .confidence {
+            display: flex;
+            align-items: center;
+        }
+
+        .confidence-bar {
+            width: 60px;
+            height: 4px;
+            background: #ecf0f1;
+            border-radius: 2px;
+            margin-left: 8px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #27ae60);
+            transition: width 0.3s ease;
+        }
+
+        .train-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .train-card {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .train-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+        }
+
+        .train-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .train-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .train-status {
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-on_time {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-delayed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-early {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-cancelled {
+            background: #f5c6cb;
+            color: #721c24;
+        }
+
+        .status-maintenance {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .train-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            text-align: center;
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-left: 4px solid #27ae60;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .metric-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-train"></i> Train Traffic Throughput Maximization System</h1>
+            <p>Advanced AI-Powered Railway Optimization Platform for Indian Railways</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-value" id="throughput-score">-</div>
+                <div class="status-label">Throughput Score</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="total-trains">-</div>
+                <div class="status-label">Active Trains</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="active-decisions">-</div>
+                <div class="status-label">AI Decisions</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="system-status">-</div>
+                <div class="status-label">System Status</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-line card-icon"></i>
+                    <h3 class="card-title">System Performance</h3>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div class="metric-value" id="total-passengers">-</div>
+                        <div class="metric-label">Total Passengers</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="avg-delay">-</div>
+                        <div class="metric-label">Avg Delay (min)</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="avg-efficiency">-</div>
+                        <div class="metric-label">Efficiency %</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="avg-fuel">-</div>
+                        <div class="metric-label">Fuel Level %</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-robot card-icon"></i>
+                    <h3 class="card-title">AI Optimization Decisions</h3>
+                </div>
+                <div id="decisions">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading AI decisions...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-train card-icon"></i>
+                <h3 class="card-title">Live Train Status & Optimizations</h3>
+            </div>
+            <div class="train-grid" id="trains">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading train data...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="loadData()">
+                <i class="fas fa-sync-alt"></i> Refresh Data
+            </button>
+            <button class="btn btn-secondary" onclick="showSystemInfo()">
+                <i class="fas fa-info-circle"></i> System Info
+            </button>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i> System updated successfully!
+    </div>
+
+    <script>
+        let ws = null;
+        let isConnected = false;
+
+        // Initialize WebSocket connection
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                isConnected = true;
+                console.log('WebSocket connected');
+            };
+            
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.type === 'system_update') {
+                    updateDashboard(data);
+                    showNotification('System updated in real-time');
+                }
+            };
+            
+            ws.onclose = function() {
+                isConnected = false;
+                console.log('WebSocket disconnected');
+                // Reconnect after 5 seconds
+                setTimeout(initWebSocket, 5000);
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        // Load data from API
+        async function loadData() {
+            try {
+                const [metricsRes, decisionsRes, trainsRes] = await Promise.all([
+                    fetch('/api/metrics'),
+                    fetch('/api/optimizations'),
+                    fetch('/api/trains')
+                ]);
+                
+                const metrics = await metricsRes.json();
+                const decisions = await decisionsRes.json();
+                const trains = await trainsRes.json();
+                
+                updateDashboard({ metrics, decisions, trains });
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showNotification('Error loading data', 'error');
+            }
+        }
+
+        // Update dashboard with new data
+        function updateDashboard(data) {
+            const { metrics, decisions, trains } = data;
+            
+            // Update status bar
+            document.getElementById('throughput-score').textContent = metrics.throughput_score;
+            document.getElementById('total-trains').textContent = metrics.total_trains;
+            document.getElementById('active-decisions').textContent = metrics.active_decisions;
+            document.getElementById('system-status').textContent = metrics.system_status.toUpperCase();
+            
+            // Update performance metrics
+            document.getElementById('total-passengers').textContent = metrics.total_passengers.toLocaleString();
+            document.getElementById('avg-delay').textContent = metrics.average_delay;
+            document.getElementById('avg-efficiency').textContent = metrics.average_efficiency;
+            document.getElementById('avg-fuel').textContent = metrics.average_fuel_level;
+            
+            // Update decisions
+            updateDecisions(decisions);
+            
+            // Update trains
+            updateTrains(trains);
+        }
+
+        // Update decisions display
+        function updateDecisions(decisions) {
+            const decisionsDiv = document.getElementById('decisions');
+            
+            if (decisions.length === 0) {
+                decisionsDiv.innerHTML = '<p style="text-align: center; color: #27ae60; padding: 20px; font-size: 1.1rem;"><i class="fas fa-check-circle"></i> System running optimally - no decisions needed</p>';
+            } else {
+                decisionsDiv.innerHTML = decisions.map(decision => `
+                    <div class="decision ${decision.priority}">
+                        <div class="decision-header">
+                            <div class="decision-type">${decision.type.replace('_', ' ')}</div>
+                            <div class="decision-priority priority-${decision.priority}">${decision.priority}</div>
+                        </div>
+                        <div class="decision-action">${decision.action}</div>
+                        <div class="decision-impact">${decision.impact}</div>
+                        <div class="decision-meta">
+                            <span>Benefit: +${decision.estimated_benefit.toFixed(1)}%</span>
+                            <div class="confidence">
+                                <span>Confidence:</span>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width: ${decision.confidence * 100}%"></div>
+                                </div>
+                                <span>${(decision.confidence * 100).toFixed(0)}%</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Update trains display
+        function updateTrains(trains) {
+            const trainsDiv = document.getElementById('trains');
+            
+            trainsDiv.innerHTML = trains.map(train => `
+                <div class="train-card">
+                    <div class="train-header">
+                        <div class="train-name">${train.name} (${train.id})</div>
+                        <div class="train-status status-${train.status}">${train.status.replace('_', ' ')}</div>
+                    </div>
+                    
+                    <div class="train-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Track</div>
+                            <div class="detail-value">${train.current_track}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Speed</div>
+                            <div class="detail-value">${train.speed} km/h</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Position</div>
+                            <div class="detail-value">${train.position.toFixed(1)}%</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Priority</div>
+                            <div class="detail-value">${train.priority.toUpperCase()}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Passengers</div>
+                            <div class="detail-value">${train.passengers.toLocaleString()}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Delay</div>
+                            <div class="detail-value" style="color: ${train.delay > 0 ? '#e74c3c' : train.delay < 0 ? '#27ae60' : '#2c3e50'}">
+                                ${train.delay > 0 ? '+' : ''}${train.delay} min
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 15px 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="font-size: 0.9rem; color: #6c757d;">Efficiency</span>
+                            <span style="font-size: 0.9rem; color: #6c757d;">${(train.efficiency * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${train.efficiency * 100}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 15px 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="font-size: 0.9rem; color: #6c757d;">Fuel Level</span>
+                            <span style="font-size: 0.9rem; color: #6c757d;">${train.fuel_level.toFixed(1)}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${train.fuel_level}%; background: linear-gradient(90deg, #e74c3c, #f39c12, #27ae60);"></div>
+                        </div>
+                    </div>
+                    
+                    ${train.maintenance_due ? '<div style="color: #f39c12; font-size: 0.9rem; text-align: center; margin-top: 10px;"><i class="fas fa-wrench"></i> Maintenance Required</div>' : ''}
+                </div>
+            `).join('');
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'}"></i> ${message}`;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Show system info
+        function showSystemInfo() {
+            alert(`Train Traffic Throughput Maximization System v2.0.0
+
+🤖 AI Features:
+• Real-time optimization decisions
+• Predictive maintenance alerts
+• Dynamic route optimization
+• Intelligent slot trading
+• Headway optimization
+• Junction conflict resolution
+
+📊 Real-time Updates:
+• WebSocket connection for live data
+• Auto-refresh every 10 seconds
+• Live performance metrics
+• Real-time train tracking
+
+🔧 System Status:
+• WebSocket: ${isConnected ? 'Connected' : 'Disconnected'}
+• Last Update: ${new Date().toLocaleTimeString()}
+• API Status: Operational`);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            initWebSocket();
+            
+            // Refresh data every 30 seconds as backup
+            setInterval(loadData, 30000);
+        });
+    </script>
+</body>
+</html>
