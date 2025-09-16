@@ -2,134 +2,290 @@
 
 **Advanced AI-Powered Railway Optimization Platform for Indian Railways**
 
-## 🌟 Features
+## 🎯 Overview
 
-### 🤖 AI-Powered Optimization
-- **Real-time Decision Making** - AI continuously analyzes and optimizes train operations
-- **Headway Optimization** - Prevents collisions and improves safety
-- **Junction Conflict Resolution** - Dynamic routing to eliminate conflicts
-- **Speed Optimization** - Intelligent speed adjustments with fuel efficiency
-- **Predictive Maintenance** - ML-based maintenance scheduling
-- **Slot Trading** - Optimize train schedules between different zones
-- **Route Optimization** - Find alternative routes for delayed trains
+This system provides real-time train traffic optimization using advanced AI algorithms, predictive analytics, and intelligent decision-making to maximize railway throughput while ensuring safety and efficiency. The system features a modern Next.js frontend integrated with a powerful FastAPI backend.
 
-### 📊 Advanced Analytics
-- **Throughput Score** - Real-time system efficiency measurement (0-100)
-- **Performance Metrics** - Track utilization, delays, efficiency, fuel levels
-- **Live Train Tracking** - Real-time position, speed, and status updates
-- **Safety Monitoring** - Track safety violations and maintenance needs
+## ✨ Features
 
-### 🌐 Beautiful Web Interface
-- **Modern Dashboard** - Clean, responsive design with real-time updates
-- **WebSocket Integration** - Live data streaming without page refresh
-- **Interactive Charts** - Visual representation of system performance
-- **Mobile Responsive** - Works on all devices
+### 🎨 Frontend (Next.js)
+- **Real-time Dashboard**: Live monitoring of trains, tracks, and system performance
+- **Train Management**: Complete train tracking, status updates, and control
+- **Track Management**: Infrastructure monitoring, maintenance scheduling, and capacity tracking
+- **AI Optimization Center**: Interactive optimization decisions and performance analytics
+- **Analytics & Reporting**: Comprehensive performance metrics and trend analysis
+- **Responsive Design**: Modern, mobile-friendly interface with dark/light themes
+
+### 🚀 Backend (FastAPI)
+- **AI Optimization Engine**: Multiple optimization algorithms for different scenarios
+- **Real-time Simulation**: Live railway system simulation with realistic data
+- **WebSocket Support**: Real-time updates and notifications
+- **RESTful API**: Comprehensive API endpoints for all system functions
+- **Predictive Analytics**: Machine learning-based predictions for maintenance and delays
+- **Safety Monitoring**: Real-time safety validation and conflict detection
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.11 or higher
-- pip (Python package manager)
 
-### Installation & Running
+- Python 3.8+
+- Node.js 16+
+- npm or yarn
 
-1. **Clone or download the project**
-2. **Install dependencies:**
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd SIH2
+   ```
+
+2. **Install Python dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Start the application:**
+3. **Install frontend dependencies**
    ```bash
-   python start.py
+   cd railway-optimization
+   npm install
    ```
-   Or directly:
+
+### Running the System
+
+**Option 1: Integrated Startup (Recommended)**
+```bash
+python start_full_system.py
+```
+
+This will:
+- Check all requirements
+- Install frontend dependencies if needed
+- Build the frontend
+- Start the backend server
+- Start the frontend development server
+- Provide access URLs
+
+**Option 2: Manual Startup**
+
+1. **Start the backend**:
    ```bash
    python app.py
    ```
 
-4. **Access the dashboard:**
-   - Open your browser to: `http://localhost:8000`
-   - API Documentation: `http://localhost:8000/api/docs`
-   - Health Check: `http://localhost:8000/api/health`
+2. **Start the frontend** (in another terminal):
+   ```bash
+   cd railway-optimization
+   npm run dev
+   ```
 
-## 🏗️ System Architecture
+### Access Points
 
-### Core Components
-- **FastAPI Backend** - High-performance Python web framework
-- **WebSocket Support** - Real-time bidirectional communication
-- **AI Decision Engine** - Advanced optimization algorithms
-- **Data Models** - Structured data with Pydantic validation
-- **Background Tasks** - Continuous system updates
+- **Frontend Dashboard**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/api/docs
+- **WebSocket**: ws://localhost:8000/ws
 
-### AI Optimization Types
-1. **Headway Optimization** - Maintains safe distances between trains
-2. **Junction Optimization** - Resolves track conflicts at junctions
-3. **Speed Optimization** - Balances speed with fuel efficiency
-4. **Predictive Maintenance** - Prevents breakdowns using ML
-5. **Slot Trading** - Optimizes train scheduling
-6. **Route Optimization** - Finds alternative paths for delays
+## 🏗️ Architecture
 
-## 📈 Performance Metrics
+### Backend (FastAPI)
+- **Core Engine**: Railway system simulation and optimization
+- **AI Algorithms**: Multiple optimization strategies
+- **Real-time Updates**: WebSocket support for live data
+- **REST API**: Comprehensive API endpoints
+- **Data Models**: Structured data representation with Pydantic
 
-- **Throughput Score** - Overall system efficiency (0-100)
-- **Track Utilization** - Capacity usage across all tracks
-- **Average Delay** - Mean delay across all trains
-- **Efficiency Rating** - Individual train performance
-- **Fuel Levels** - Real-time fuel monitoring
-- **Safety Violations** - Track safety incidents
+### Frontend (Next.js)
+- **Dashboard**: Real-time monitoring interface
+- **Analytics**: Performance charts and metrics
+- **Train Management**: Live train status and control
+- **Track Management**: Infrastructure monitoring
+- **AI Center**: Optimization decisions and controls
+
+## 📊 Key Components
+
+### AI Optimization Engine
+- **Headway Optimization**: Prevents collisions and improves flow
+- **Junction Management**: Resolves conflicts at railway junctions
+- **Speed Optimization**: Balances speed with fuel efficiency
+- **Predictive Maintenance**: ML-based maintenance scheduling
+- **Slot Trading**: Dynamic slot allocation between trains
+- **Route Optimization**: Alternative routing for delays
+
+### Real-time Features
+- **Live Train Tracking**: Real-time position and status updates
+- **Performance Metrics**: Continuous monitoring of system KPIs
+- **Alert System**: Automated notifications for critical events
+- **WebSocket Updates**: Sub-second latency for real-time data
 
 ## 🔧 API Endpoints
 
-- `GET /` - Main dashboard
+### Core Endpoints
 - `GET /api/health` - System health check
-- `GET /api/trains` - All train data
-- `GET /api/tracks` - Track information
-- `GET /api/junctions` - Junction data
-- `GET /api/optimizations` - AI decisions
-- `GET /api/metrics` - Performance metrics
-- `WebSocket /ws` - Real-time updates
+- `GET /api/trains` - List all trains
+- `GET /api/tracks` - List all tracks
+- `GET /api/junctions` - List all junctions
+- `GET /api/optimizations` - Get AI optimization decisions
+- `GET /api/metrics` - System performance metrics
 
-## 🎯 Key Benefits
+### Detailed Endpoints
+- `GET /api/trains/{id}` - Get specific train details
+- `GET /api/trains/{id}/status` - Get train real-time status
+- `PUT /api/trains/{id}/status` - Update train status
+- `GET /api/tracks/{id}` - Get specific track details
+- `GET /api/tracks/{id}/trains` - Get trains on specific track
+- `GET /api/optimizations/{id}` - Get specific optimization
+- `PUT /api/optimizations/{id}` - Update optimization status
 
-- **Increased Throughput** - Optimize train capacity and scheduling
-- **Improved Safety** - Prevent collisions and conflicts
-- **Fuel Efficiency** - Reduce energy consumption
-- **Reduced Delays** - Intelligent delay management
-- **Predictive Maintenance** - Prevent costly breakdowns
-- **Real-time Monitoring** - Live system visibility
+### Analytics Endpoints
+- `GET /api/analytics/performance` - Performance analytics data
+- `GET /api/analytics/reports` - Generate reports
+- `GET /api/alerts` - System alerts and notifications
+- `GET /api/network/status` - Network connectivity status
 
-## 🛠️ Technical Stack
+### WebSocket
+- `ws://localhost:8000/ws` - Real-time updates
 
-- **Backend**: FastAPI, Uvicorn, Pydantic
-- **AI/ML**: Scikit-learn, NumPy, Pandas, SciPy
-- **Optimization**: CVXPY, NetworkX
-- **Data Processing**: Pandas, NumPy
-- **Visualization**: Plotly, Matplotlib, Seaborn
-- **Real-time**: WebSockets, asyncio
-- **Database**: SQLAlchemy (ready for integration)
+## 🎨 Frontend Pages
 
-## 📱 Usage
+### Dashboard (`/`)
+- Live metrics and KPIs with real-time updates
+- Real-time train status map with location tracking
+- System overview and alerts
+- Network status monitoring
+- Recent optimization decisions
 
-1. **Monitor System** - View real-time performance metrics
-2. **Track Trains** - See live train positions and status
-3. **Review AI Decisions** - Understand optimization recommendations
-4. **Analyze Performance** - Use charts and metrics for insights
-5. **Real-time Updates** - Data refreshes automatically every 10 seconds
+### Trains (`/trains`)
+- Complete train management interface
+- Train filtering and search capabilities
+- Real-time status updates
+- Performance statistics and analytics
+- Individual train detail views
 
-## 🔮 Future Enhancements
+### Tracks (`/tracks`)
+- Track condition monitoring
+- Maintenance scheduling interface
+- Capacity utilization visualization
+- Weather and signal status
+- Track-specific train listings
 
-- Database integration for persistent data
-- Machine learning model training
-- Integration with real railway systems
-- Advanced predictive analytics
-- Mobile app development
-- Multi-railway network support
+### Optimization (`/optimization`)
+- AI optimization center
+- Decision management interface
+- Performance analytics
+- Control interfaces for manual overrides
+- Real-time optimization metrics
 
-## 📞 Support
+### Analytics (`/analytics`)
+- Comprehensive reporting dashboard
+- Performance trends and forecasting
+- KPI dashboards with interactive charts
+- Report generation and export
+- Historical data analysis
 
-For technical support or questions about the system, please refer to the API documentation at `http://localhost:8000/api/docs` when the application is running.
+## 🔬 Technical Details
+
+### Backend Technologies
+- **FastAPI**: Modern Python web framework with automatic API docs
+- **Uvicorn**: ASGI server for high performance
+- **Pydantic**: Data validation and serialization
+- **WebSockets**: Real-time communication
+- **NumPy/Pandas**: Data processing and analytics
+- **Asyncio**: Asynchronous programming for better performance
+
+### Frontend Technologies
+- **Next.js 14**: React framework with App Router
+- **TypeScript**: Type-safe development
+- **Tailwind CSS**: Utility-first styling
+- **Radix UI**: Accessible component library
+- **Recharts**: Data visualization and charts
+- **Lucide React**: Modern icon library
+- **React Hooks**: State management and side effects
+
+### AI/ML Features
+- **Multi-objective Optimization**: Balances multiple performance criteria
+- **Predictive Analytics**: Machine learning for maintenance and delays
+- **Real-time Decision Making**: Sub-second optimization decisions
+- **Adaptive Algorithms**: Self-improving optimization strategies
+- **Confidence Scoring**: AI decision confidence metrics
+
+## 📈 Performance Metrics
+
+- **Throughput Score**: Overall system efficiency (0-100)
+- **Average Delay**: Mean delay across all trains
+- **Efficiency**: Fuel and energy efficiency metrics
+- **Safety Violations**: Real-time safety monitoring
+- **Passenger Satisfaction**: Service quality indicators
+- **AI Accuracy**: Machine learning model performance
+- **Energy Savings**: Fuel consumption optimization
+
+## 🛡️ Safety Features
+
+- **Real-time Conflict Detection**: Prevents collisions
+- **Safety Overlay**: ATP/Kavach integration ready
+- **Emergency Protocols**: Automated safety responses
+- **Audit Logging**: Complete decision tracking
+- **Risk Assessment**: Continuous safety evaluation
+
+## 🚀 Deployment
+
+### Development
+```bash
+python start_full_system.py
+```
+
+### Docker Support
+```bash
+docker-compose up -d
+```
+
+### Production Deployment
+1. Build the frontend: `cd railway-optimization && npm run build`
+2. Start the backend: `uvicorn app:app --host 0.0.0.0 --port 8000`
+3. Serve static files through nginx or similar
+
+## 🎯 Key Features Integration
+
+### Real-time Data Flow
+- Backend generates realistic railway simulation data
+- Frontend consumes data via REST API and WebSocket
+- Automatic fallback to mock data if backend unavailable
+- Real-time updates every 5-10 seconds
+
+### AI Decision Making
+- Backend runs optimization algorithms continuously
+- Frontend displays AI decisions with confidence scores
+- Interactive decision management interface
+- Real-time impact assessment
+
+### Modern UI/UX
+- Responsive design for all screen sizes
+- Dark/light theme support
+- Loading states and error handling
+- Smooth animations and transitions
+- Accessible components
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the API documentation at `/api/docs`
+- Review the code comments for implementation details
 
 ---
 
-**Built with ❤️ for Indian Railways - Advancing Railway Operations Through AI**
+**Built with ❤️ for Indian Railways**
+
+*This system demonstrates advanced AI-powered railway optimization with a modern, production-ready architecture.*

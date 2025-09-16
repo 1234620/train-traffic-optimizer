@@ -6,6 +6,7 @@ Advanced AI-Powered Railway Optimization Platform
 
 import asyncio
 import json
+import os
 import time
 import random
 import math
@@ -16,7 +17,7 @@ from enum import Enum
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import numpy as np
@@ -442,11 +443,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 # API Routes
-@app.get("/", response_class=HTMLResponse)
-async def get_dashboard():
-    """Serve the main dashboard"""
-    with open("templates/dashboard.html", "r", encoding="utf-8") as f:
-        return HTMLResponse(f.read())
+# (Frontend static serving will be mounted after API routes)
 
 @app.get("/api/health")
 async def health_check():
@@ -559,6 +556,254 @@ async def get_metrics():
         "system_status": "operational" if throughput > 70 else "degraded" if throughput > 40 else "critical"
     }
 
+# Additional API endpoints for frontend integration
+
+@app.get("/api/trains/{train_id}")
+async def get_train(train_id: str):
+    """Get specific train data"""
+    train = next((t for t in railway_system.trains if t.id == train_id), None)
+    if not train:
+        raise HTTPException(status_code=404, detail="Train not found")
+    
+    return {
+        "id": train.id,
+        "name": train.name,
+        "current_track": train.current_track,
+        "speed": train.speed,
+        "position": train.position,
+        "destination": train.destination,
+        "priority": train.priority.value,
+        "passengers": train.passengers,
+        "delay": train.delay,
+        "status": train.status.value,
+        "efficiency": train.efficiency,
+        "fuel_level": train.fuel_level,
+        "maintenance_due": train.maintenance_due,
+        "route": train.route,
+        "estimated_arrival": train.estimated_arrival.isoformat()
+    }
+
+@app.get("/api/trains/{train_id}/status")
+async def get_train_status(train_id: str):
+    """Get train status and real-time data"""
+    train = next((t for t in railway_system.trains if t.id == train_id), None)
+    if not train:
+        raise HTTPException(status_code=404, detail="Train not found")
+    
+    return {
+        "id": train.id,
+        "status": train.status.value,
+        "delay": train.delay,
+        "speed": train.speed,
+        "position": train.position,
+        "efficiency": train.efficiency,
+        "fuel_level": train.fuel_level,
+        "maintenance_due": train.maintenance_due,
+        "last_updated": datetime.now().isoformat()
+    }
+
+@app.put("/api/trains/{train_id}/status")
+async def update_train_status(train_id: str, status_data: dict):
+    """Update train status"""
+    train = next((t for t in railway_system.trains if t.id == train_id), None)
+    if not train:
+        raise HTTPException(status_code=404, detail="Train not found")
+    
+    # Update train properties
+    if "speed" in status_data:
+        train.speed = status_data["speed"]
+    if "delay" in status_data:
+        train.delay = status_data["delay"]
+    if "status" in status_data:
+        train.status = TrainStatus(status_data["status"])
+    
+    return {"message": "Train status updated successfully"}
+
+@app.get("/api/tracks/{track_id}")
+async def get_track(track_id: str):
+    """Get specific track data"""
+    track = railway_system.tracks.get(track_id)
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+    
+    return {
+        "id": track.id,
+        "capacity": track.capacity,
+        "speed_limit": track.speed_limit,
+        "length": track.length,
+        "utilization": track.utilization,
+        "maintenance_status": track.maintenance_status,
+        "weather_condition": track.weather_condition,
+        "signal_status": track.signal_status
+    }
+
+@app.get("/api/tracks/{track_id}/trains")
+async def get_track_trains(track_id: str):
+    """Get trains on specific track"""
+    track = railway_system.tracks.get(track_id)
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+    
+    track_trains = [t for t in railway_system.trains if t.current_track == track_id]
+    return [
+        {
+            "id": train.id,
+            "name": train.name,
+            "speed": train.speed,
+            "position": train.position,
+            "delay": train.delay,
+            "status": train.status.value,
+            "priority": train.priority.value
+        }
+        for train in track_trains
+    ]
+
+@app.get("/api/optimizations/{optimization_id}")
+async def get_optimization(optimization_id: str):
+    """Get specific optimization decision"""
+    decision = next((d for d in railway_system.optimization_decisions if d.id == optimization_id), None)
+    if not decision:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    return {
+        "id": decision.id,
+        "type": decision.type.value,
+        "train_id": decision.train_id,
+        "track_id": decision.track_id,
+        "junction_id": decision.junction_id,
+        "action": decision.action,
+        "impact": decision.impact,
+        "priority": decision.priority,
+        "confidence": decision.confidence,
+        "estimated_benefit": decision.estimated_benefit,
+        "implementation_time": decision.implementation_time,
+        "status": decision.status
+    }
+
+@app.put("/api/optimizations/{optimization_id}")
+async def update_optimization(optimization_id: str, update_data: dict):
+    """Update optimization decision status"""
+    decision = next((d for d in railway_system.optimization_decisions if d.id == optimization_id), None)
+    if not decision:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    if "status" in update_data:
+        decision.status = update_data["status"]
+    
+    return {"message": "Optimization updated successfully"}
+
+@app.get("/api/analytics/performance")
+async def get_performance_analytics():
+    """Get performance analytics data"""
+    # Generate historical performance data
+    current_time = datetime.now()
+    performance_data = []
+    
+    for i in range(24):  # Last 24 hours
+        timestamp = current_time - timedelta(hours=i)
+        throughput = railway_system.calculate_throughput_score() + random.uniform(-5, 5)
+        performance_data.append({
+            "timestamp": timestamp.isoformat(),
+            "throughput": round(max(0, min(100, throughput)), 1),
+            "efficiency": round(random.uniform(75, 95), 1),
+            "delays": random.randint(0, 15),
+            "energy_consumption": round(random.uniform(80, 120), 1)
+        })
+    
+    return {
+        "performance_trends": performance_data,
+        "peak_hours": [8, 18, 20],
+        "efficiency_score": round(railway_system.calculate_throughput_score(), 1),
+        "improvement_rate": round(random.uniform(5, 15), 1)
+    }
+
+@app.get("/api/analytics/reports")
+async def get_analytics_reports():
+    """Get analytics reports data"""
+    return {
+        "daily_report": {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "total_trains": len(railway_system.trains),
+            "on_time_percentage": round(random.uniform(85, 95), 1),
+            "average_delay": round(sum(train.delay for train in railway_system.trains) / len(railway_system.trains), 1),
+            "throughput_score": round(railway_system.calculate_throughput_score(), 1),
+            "energy_efficiency": round(random.uniform(80, 95), 1)
+        },
+        "weekly_trends": {
+            "throughput_trend": "increasing",
+            "delay_trend": "decreasing",
+            "efficiency_trend": "stable"
+        }
+    }
+
+@app.get("/api/alerts")
+async def get_alerts():
+    """Get system alerts and notifications"""
+    alerts = []
+    
+    # Generate alerts based on system state
+    for train in railway_system.trains:
+        if train.delay > 20:
+            alerts.append({
+                "id": f"alert_{train.id}_delay",
+                "type": "delay",
+                "severity": "high",
+                "message": f"Train {train.name} is delayed by {train.delay} minutes",
+                "timestamp": datetime.now().isoformat(),
+                "train_id": train.id
+            })
+        
+        if train.fuel_level < 20:
+            alerts.append({
+                "id": f"alert_{train.id}_fuel",
+                "type": "fuel",
+                "severity": "medium",
+                "message": f"Train {train.name} has low fuel level: {train.fuel_level:.1f}%",
+                "timestamp": datetime.now().isoformat(),
+                "train_id": train.id
+            })
+        
+        if train.maintenance_due:
+            alerts.append({
+                "id": f"alert_{train.id}_maintenance",
+                "type": "maintenance",
+                "severity": "medium",
+                "message": f"Train {train.name} requires maintenance",
+                "timestamp": datetime.now().isoformat(),
+                "train_id": train.id
+            })
+    
+    # Track maintenance alerts
+    for track_id, track in railway_system.tracks.items():
+        if track.maintenance_status == "maintenance_required":
+            alerts.append({
+                "id": f"alert_{track_id}_maintenance",
+                "type": "track_maintenance",
+                "severity": "high",
+                "message": f"Track {track_id} requires maintenance",
+                "timestamp": datetime.now().isoformat(),
+                "track_id": track_id
+            })
+    
+    return {
+        "alerts": alerts,
+        "total_alerts": len(alerts),
+        "critical_alerts": len([a for a in alerts if a["severity"] == "high"]),
+        "last_updated": datetime.now().isoformat()
+    }
+
+@app.get("/api/network/status")
+async def get_network_status():
+    """Get network connectivity status"""
+    return {
+        "status": "connected",
+        "latency": random.randint(10, 50),
+        "uptime": "99.9%",
+        "last_sync": datetime.now().isoformat(),
+        "active_connections": len(manager.active_connections),
+        "data_flow": "normal"
+    }
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time updates"""
@@ -596,6 +841,34 @@ async def background_updater():
 async def startup_event():
     """Start background tasks on startup"""
     asyncio.create_task(background_updater())
+
+# Serve Next.js static export at the root if built
+try:
+    app.mount("/_next", StaticFiles(directory="railway-optimization/out/_next", html=False), name="_next")
+    app.mount("/public", StaticFiles(directory="railway-optimization/out", html=False), name="public")
+
+    @app.get("/", response_class=HTMLResponse)
+    async def serve_index():
+        return FileResponse("railway-optimization/out/index.html")
+    
+    # Handle SPA routing - serve index.html for all routes that don't exist as files
+    @app.get("/{path:path}", response_class=HTMLResponse)
+    async def serve_spa(path: str):
+        # Check if it's an API route
+        if path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        
+        # Check if the file exists
+        file_path = f"railway-optimization/out/{path}"
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        
+        # For SPA routing, serve index.html for all other routes
+        return FileResponse("railway-optimization/out/index.html")
+        
+except Exception as e:
+    print(f"Error setting up static files: {e}")
+    pass
 
 if __name__ == "__main__":
     uvicorn.run(

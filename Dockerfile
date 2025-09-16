@@ -5,13 +5,15 @@ FROM node:18-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Copy package files
-COPY frontend/package*.json ./
+# Copy Next.js app package files
+COPY railway-optimization/package*.json ./
 
 # Install frontend dependencies
 RUN npm install --legacy-peer-deps
 
 # Copy frontend source code
-COPY frontend/ ./
+# Copy Next.js source
+COPY railway-optimization/ ./
 
 # Build frontend
 RUN npm run build
@@ -38,7 +40,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Copy built frontend from previous stage
-COPY --from=frontend-builder /app/frontend/build ./frontend/build
+# Copy exported Next.js static site
+COPY --from=frontend-builder /app/frontend/out ./frontend/out
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
@@ -49,7 +52,7 @@ EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8000/api/health || exit 1
 
 # Start the application
-CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
