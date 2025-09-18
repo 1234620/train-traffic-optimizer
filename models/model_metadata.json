@@ -1,0 +1,83 @@
+{
+  "model_version": "1.0",
+  "trained_at": "2025-09-18T20:41:56.631123",
+  "feature_columns": [
+    "speed",
+    "fuel_efficiency",
+    "engine_temperature",
+    "brake_wear",
+    "vibration_level",
+    "operating_hours",
+    "distance_traveled",
+    "load_factor",
+    "weather_severity",
+    "track_condition",
+    "maintenance_days_since"
+  ],
+  "model_types": {
+    "classifier": "RandomForestClassifier",
+    "regressor": "GradientBoostingRegressor"
+  },
+  "model_performance": {
+    "classifier_accuracy": 98.9,
+    "regressor_r2_score": 48.4,
+    "training_samples": 4000
+  },
+  "feature_importance": [
+    {
+      "feature": "brake_wear",
+      "importance_class": 0.24016861500301104,
+      "importance_reg": 0.3078251073409703
+    },
+    {
+      "feature": "maintenance_days_since",
+      "importance_class": 0.2728949853765181,
+      "importance_reg": 0.20082749428714558
+    },
+    {
+      "feature": "engine_temperature",
+      "importance_class": 0.10818452108349978,
+      "importance_reg": 0.15860910142540588
+    },
+    {
+      "feature": "vibration_level",
+      "importance_class": 0.1445972873345701,
+      "importance_reg": 0.1306098993006395
+    },
+    {
+      "feature": "operating_hours",
+      "importance_class": 0.023516499585600648,
+      "importance_reg": 0.03696637935040537
+    },
+    {
+      "feature": "fuel_efficiency",
+      "importance_class": 0.03796521528774559,
+      "importance_reg": 0.036673853198056224
+    },
+    {
+      "feature": "load_factor",
+      "importance_class": 0.04137808858192125,
+      "importance_reg": 0.0284451672278077
+    },
+    {
+      "feature": "weather_severity",
+      "importance_class": 0.01641293954646026,
+      "importance_reg": 0.026994237485650094
+    },
+    {
+      "feature": "track_condition",
+      "importance_class": 0.047161335251322205,
+      "importance_reg": 0.026479595723946366
+    },
+    {
+      "feature": "speed",
+      "importance_class": 0.02814909114204882,
+      "importance_reg": 0.024052091099124005
+    },
+    {
+      "feature": "distance_traveled",
+      "importance_class": 0.039571421807302276,
+      "importance_reg": 0.022517073560848914
+    }
+  ]
+}

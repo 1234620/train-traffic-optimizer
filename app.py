@@ -24,6 +24,18 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel
 
+# ML Model imports
+try:
+    import joblib
+    from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
+    from sklearn.preprocessing import StandardScaler
+    ML_AVAILABLE = True
+    print("✅ ML dependencies loaded successfully")
+except ImportError as e:
+    ML_AVAILABLE = False
+    print(f"⚠️ ML dependencies not available: {e}")
+    print("   Run: pip install scikit-learn joblib")
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Train Traffic Throughput Maximization System",
@@ -126,6 +138,14 @@ class RailwaySystem:
         self.safety_violations: int = 0
         self.energy_efficiency: float = 0.0
         self.passenger_satisfaction: float = 0.0
+        
+        # ML Models
+        self.ml_models = {}
+        self.ml_scalers = {}
+        self.ml_feature_columns = []
+        self.ml_model_performance = {}
+        self.load_ml_models()
+        
         self.initialize_system()
     
     def initialize_system(self):
@@ -165,6 +185,168 @@ class RailwaySystem:
             Train("T006", "Garib Rath", "T6", 90, 10, "J5", Priority.LOW, 1800, 8, 
                   TrainStatus.DELAYED, 0.75, 65.4, True, ["T6"], current_time + timedelta(minutes=90))
         ]
+    
+    def load_ml_models(self):
+        """Load pre-trained ML models for predictive maintenance"""
+        if not ML_AVAILABLE:
+            print("⚠️ ML models not available - using fallback heuristics")
+            return
+            
+        try:
+            models_dir = "models"
+            if not os.path.exists(models_dir):
+                print(f"⚠️ Models directory '{models_dir}' not found - using fallback heuristics")
+                return
+            
+            # Load models
+            classifier_path = os.path.join(models_dir, "maintenance_classifier.joblib")
+            regressor_path = os.path.join(models_dir, "failure_risk_regressor.joblib")
+            scaler_class_path = os.path.join(models_dir, "scaler_classifier.joblib")
+            scaler_reg_path = os.path.join(models_dir, "scaler_regressor.joblib")
+            metadata_path = os.path.join(models_dir, "model_metadata.json")
+            
+            if all(os.path.exists(path) for path in [classifier_path, regressor_path, scaler_class_path, scaler_reg_path, metadata_path]):
+                self.ml_models['classifier'] = joblib.load(classifier_path)
+                self.ml_models['regressor'] = joblib.load(regressor_path)
+                self.ml_scalers['classifier'] = joblib.load(scaler_class_path)
+                self.ml_scalers['regressor'] = joblib.load(scaler_reg_path)
+                
+                # Load metadata
+                with open(metadata_path, 'r') as f:
+                    metadata = json.load(f)
+                    self.ml_feature_columns = metadata['feature_columns']
+                    self.ml_model_performance = metadata.get('model_performance', {})
+                
+                print("✅ ML models loaded successfully")
+                print(f"   - Classifier: {type(self.ml_models['classifier']).__name__}")
+                print(f"   - Regressor: {type(self.ml_models['regressor']).__name__}")
+                print(f"   - Features: {len(self.ml_feature_columns)} columns")
+            else:
+                print("⚠️ Some model files missing - using fallback heuristics")
+                
+        except Exception as e:
+            print(f"❌ Error loading ML models: {e}")
+            print("   Using fallback heuristics instead")
+    
+    def predict_maintenance_risk(self, train: Train) -> Dict[str, Any]:
+        """Predict maintenance risk for a train using ML models"""
+        if not self.ml_models or not ML_AVAILABLE:
+            # Fallback heuristic prediction
+            risk_score = 0.0
+            risk_score += (100 - train.fuel_level) / 100 * 0.3  # Lower fuel = higher risk
+            risk_score += train.delay / 60 * 0.2  # More delay = higher risk
+            risk_score += (1 - train.efficiency) * 0.3  # Lower efficiency = higher risk
+            risk_score += (train.position / 1000) * 0.1  # More distance = slight risk increase
+            risk_score += random.uniform(0, 0.1)  # Some randomness
+            
+            risk_score = min(risk_score, 1.0)
+            needs_maintenance = risk_score > 0.7
+            risk_level = "Critical" if risk_score > 0.8 else "High" if risk_score > 0.6 else "Medium" if risk_score > 0.3 else "Low"
+            
+            return {
+                "train_id": train.id,
+                "failure_risk": risk_score,
+                "needs_maintenance": needs_maintenance,
+                "risk_level": risk_level,
+                "confidence": 0.6,  # Lower confidence for heuristic
+                "model_type": "heuristic",
+                "predictions": {
+                    "maintenance_probability": needs_maintenance,
+                    "risk_score": risk_score,
+                    "estimated_days_to_failure": int(30 * (1 - risk_score)) if risk_score > 0.5 else None
+                }
+            }
+        
+        try:
+            # Prepare features for ML prediction
+            current_time = datetime.now()
+            
+            # Generate realistic operational metrics based on train state
+            features = {
+                'speed': train.speed,
+                'fuel_efficiency': train.fuel_level,
+                'engine_temperature': 85 + random.uniform(-10, 15),  # Realistic range
+                'brake_wear': random.uniform(20, 80),  # Simulated brake wear
+                'vibration_level': random.uniform(1, 5),  # Simulated vibration
+                'operating_hours': random.uniform(1000, 8000),  # Simulated operating hours
+                'distance_traveled': train.position,
+                'load_factor': train.efficiency,
+                'weather_severity': random.randint(1, 5),  # Simulated weather
+                'track_condition': self.tracks.get(train.current_track, Track("", 0, 0, 0, 0.8, "", "", "")).utilization,
+                'maintenance_days_since': random.uniform(1, 90)  # Simulated days since maintenance
+            }
+            
+            # Create feature vector
+            feature_vector = np.array([[features[col] for col in self.ml_feature_columns]])
+            
+            # Make predictions
+            # Classification (needs maintenance)
+            X_scaled_class = self.ml_scalers['classifier'].transform(feature_vector)
+            maintenance_prob = self.ml_models['classifier'].predict_proba(X_scaled_class)[0]
+            needs_maintenance = self.ml_models['classifier'].predict(X_scaled_class)[0]
+            
+            # Regression (risk score)
+            X_scaled_reg = self.ml_scalers['regressor'].transform(feature_vector)
+            risk_score = self.ml_models['regressor'].predict(X_scaled_reg)[0]
+            risk_score = max(0, min(1, risk_score))  # Ensure 0-1 bounds
+            
+            # Determine risk level
+            if risk_score > 0.8:
+                risk_level = "Critical"
+            elif risk_score > 0.6:
+                risk_level = "High"
+            elif risk_score > 0.3:
+                risk_level = "Medium"
+            else:
+                risk_level = "Low"
+            
+            # Estimate days to potential failure
+            days_to_failure = None
+            if risk_score > 0.5:
+                days_to_failure = int(60 * (1 - risk_score))
+            
+            return {
+                "train_id": train.id,
+                "failure_risk": float(risk_score),
+                "needs_maintenance": bool(needs_maintenance),
+                "risk_level": risk_level,
+                "confidence": 0.85,  # Higher confidence for ML model
+                "model_type": "machine_learning",
+                "predictions": {
+                    "maintenance_probability": float(maintenance_prob[1]) if len(maintenance_prob) > 1 else float(needs_maintenance),
+                    "risk_score": float(risk_score),
+                    "estimated_days_to_failure": days_to_failure
+                },
+                "features_used": features
+            }
+            
+        except Exception as e:
+            print(f"❌ Error in ML prediction for train {train.id}: {e}")
+            # Fallback to heuristic prediction
+            risk_score = 0.0
+            risk_score += (100 - train.fuel_level) / 100 * 0.3  # Lower fuel = higher risk
+            risk_score += train.delay / 60 * 0.2  # More delay = higher risk
+            risk_score += (1 - train.efficiency) * 0.3  # Lower efficiency = higher risk
+            risk_score += (train.position / 1000) * 0.1  # More distance = slight risk increase
+            risk_score += random.uniform(0, 0.1)  # Some randomness
+            
+            risk_score = min(risk_score, 1.0)
+            needs_maintenance = risk_score > 0.7
+            risk_level = "Critical" if risk_score > 0.8 else "High" if risk_score > 0.6 else "Medium" if risk_score > 0.3 else "Low"
+            
+            return {
+                "train_id": train.id,
+                "failure_risk": risk_score,
+                "needs_maintenance": needs_maintenance,
+                "risk_level": risk_level,
+                "confidence": 0.6,  # Lower confidence for heuristic
+                "model_type": "heuristic_fallback",
+                "predictions": {
+                    "maintenance_probability": needs_maintenance,
+                    "risk_score": risk_score,
+                    "estimated_days_to_failure": int(30 * (1 - risk_score)) if risk_score > 0.5 else None
+                }
+            }
     
     def calculate_optimizations(self) -> List[OptimizationDecision]:
         """Calculate AI-powered optimizations using advanced algorithms"""
@@ -244,19 +426,40 @@ class RailwaySystem:
         
         # 4. Predictive Maintenance using ML
         for train in self.trains:
-            if train.efficiency < 0.8 or train.maintenance_due:
+            # Get ML-powered maintenance prediction
+            maintenance_prediction = self.predict_maintenance_risk(train)
+            
+            if maintenance_prediction['needs_maintenance'] or maintenance_prediction['failure_risk'] > 0.6:
+                # Determine priority based on risk level
+                priority = "critical" if maintenance_prediction['risk_level'] == "Critical" else \
+                          "high" if maintenance_prediction['risk_level'] == "High" else "medium"
+                
+                # Calculate estimated benefit
+                efficiency_improvement = (0.95 - train.efficiency) * 100
+                risk_reduction = maintenance_prediction['failure_risk'] * 100
+                
+                # Create detailed description
+                description = f"ML-predicted maintenance for {train.name}"
+                if maintenance_prediction['predictions']['estimated_days_to_failure']:
+                    description += f" (estimated failure in {maintenance_prediction['predictions']['estimated_days_to_failure']} days)"
+                
+                reason = f"Risk level: {maintenance_prediction['risk_level']} " \
+                        f"({maintenance_prediction['failure_risk']:.1%} failure probability). " \
+                        f"Model confidence: {maintenance_prediction['confidence']:.1%}. " \
+                        f"Prevents breakdown, improves efficiency by {efficiency_improvement:.1f}%"
+                
                 decisions.append(OptimizationDecision(
                     f"OPT_{decision_id:03d}",
                     OptimizationType.PREDICTIVE_MAINTENANCE,
                     train.id,
                     None,
                     None,
-                    f"Schedule predictive maintenance for {train.name}",
-                    f"Prevents breakdown, improves efficiency by {(0.9 - train.efficiency) * 100:.1f}%",
-                    "medium",
-                    0.90,
-                    25.0,
-                    10,
+                    description,
+                    reason,
+                    priority,
+                    maintenance_prediction['confidence'],
+                    max(25.0, risk_reduction * 0.5),  # Benefit scales with risk
+                    int(5 + maintenance_prediction['failure_risk'] * 10),  # Implementation time based on urgency
                     "pending"
                 ))
                 decision_id += 1
@@ -554,6 +757,96 @@ async def get_metrics():
         "average_efficiency": round(avg_efficiency * 100, 1),
         "average_fuel_level": round(avg_fuel, 1),
         "system_status": "operational" if throughput > 70 else "degraded" if throughput > 40 else "critical"
+    }
+
+# ML-powered API endpoints
+
+@app.get("/api/ml/maintenance-predictions")
+async def get_maintenance_predictions():
+    """Get ML-powered maintenance predictions for all trains"""
+    predictions = []
+    for train in railway_system.trains:
+        prediction = railway_system.predict_maintenance_risk(train)
+        predictions.append(prediction)
+    
+    return {
+        "predictions": predictions,
+        "model_info": {
+            "ml_available": ML_AVAILABLE,
+            "model_loaded": bool(railway_system.ml_models),
+            "model_type": "machine_learning" if railway_system.ml_models else "heuristic",
+            "total_trains_analyzed": len(predictions)
+        }
+    }
+
+@app.get("/api/ml/maintenance-predictions/{train_id}")
+async def get_train_maintenance_prediction(train_id: str):
+    """Get ML-powered maintenance prediction for a specific train"""
+    train = next((t for t in railway_system.trains if t.id == train_id), None)
+    if not train:
+        raise HTTPException(status_code=404, detail="Train not found")
+    
+    prediction = railway_system.predict_maintenance_risk(train)
+    return prediction
+
+@app.get("/api/ml/model-info")
+async def get_ml_model_info():
+    """Get information about the ML models"""
+    if not railway_system.ml_models:
+        return {
+            "ml_available": ML_AVAILABLE,
+            "models_loaded": False,
+            "model_type": "heuristic",
+            "message": "ML models not available - using heuristic predictions"
+        }
+    
+    return {
+        "ml_available": ML_AVAILABLE,
+        "models_loaded": True,
+        "model_type": "machine_learning",
+        "models": {
+            "classifier": type(railway_system.ml_models.get('classifier')).__name__ if railway_system.ml_models.get('classifier') else None,
+            "regressor": type(railway_system.ml_models.get('regressor')).__name__ if railway_system.ml_models.get('regressor') else None
+        },
+        "feature_columns": railway_system.ml_feature_columns,
+        "total_features": len(railway_system.ml_feature_columns),
+        "model_performance": railway_system.ml_model_performance
+    }
+
+@app.get("/api/ml/risk-summary")
+async def get_risk_summary():
+    """Get summary of maintenance risks across all trains"""
+    predictions = []
+    for train in railway_system.trains:
+        prediction = railway_system.predict_maintenance_risk(train)
+        predictions.append(prediction)
+    
+    # Calculate summary statistics
+    risk_levels = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0}
+    total_risk = 0
+    needs_maintenance_count = 0
+    
+    for pred in predictions:
+        risk_levels[pred['risk_level']] += 1
+        total_risk += pred['failure_risk']
+        if pred['needs_maintenance']:
+            needs_maintenance_count += 1
+    
+    avg_risk = total_risk / len(predictions) if predictions else 0
+    
+    return {
+        "summary": {
+            "total_trains": len(predictions),
+            "needs_maintenance": needs_maintenance_count,
+            "average_risk_score": round(avg_risk, 3),
+            "risk_distribution": risk_levels
+        },
+        "alerts": {
+            "critical_trains": risk_levels["Critical"],
+            "high_risk_trains": risk_levels["High"],
+            "immediate_attention_needed": risk_levels["Critical"] + risk_levels["High"]
+        },
+        "model_type": "machine_learning" if railway_system.ml_models else "heuristic"
     }
 
 # Additional API endpoints for frontend integration

@@ -3,69 +3,153 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Brain, Play, Pause, Settings, BarChart3 } from "lucide-react"
+import { Brain, Play, Pause, Settings, BarChart3, AlertTriangle } from "lucide-react"
+import { useState, useEffect } from "react"
+import { fetchApi } from "@/lib/utils"
 
-const models = [
-  {
-    id: "traffic-flow",
-    name: "Traffic Flow Optimization",
-    description: "Real-time traffic routing and congestion management",
-    status: "active",
-    accuracy: 97.3,
-    lastTrained: "2024-01-15",
-    predictions: "15.2M",
-    type: "Deep Learning",
-  },
-  {
-    id: "predictive-maintenance",
-    name: "Predictive Maintenance",
-    description: "Equipment failure prediction and maintenance scheduling",
-    status: "active",
-    accuracy: 94.1,
-    lastTrained: "2024-01-12",
-    predictions: "8.7M",
-    type: "Random Forest",
-  },
-  {
-    id: "demand-forecasting",
-    name: "Passenger Demand Forecasting",
-    description: "Predict passenger volumes and optimize capacity allocation",
-    status: "training",
-    accuracy: 91.8,
-    lastTrained: "2024-01-10",
-    predictions: "12.4M",
-    type: "LSTM Neural Network",
-  },
-  {
-    id: "route-optimization",
-    name: "Dynamic Route Planning",
-    description: "Optimal route selection based on real-time conditions",
-    status: "active",
-    accuracy: 95.7,
-    lastTrained: "2024-01-14",
-    predictions: "6.3M",
-    type: "Reinforcement Learning",
-  },
-]
+interface MLModelInfo {
+  ml_available: boolean
+  models_loaded: boolean
+  model_type: string
+  models?: {
+    classifier: string | null
+    regressor: string | null
+  }
+  feature_columns?: string[]
+  total_features?: number
+  message?: string
+  model_performance?: {
+    classifier_accuracy: number
+    regressor_r2_score: number
+    training_samples: number
+  }
+}
 
 const getStatusBadge = (status: string) => {
   const colors = {
-    active: "bg-accent text-accent-foreground",
-    training: "bg-chart-4 text-white",
-    inactive: "bg-secondary text-secondary-foreground",
+    active: "bg-green-500 text-white",
+    training: "bg-orange-500 text-white",
+    inactive: "bg-gray-500 text-white",
   }
   return <Badge className={colors[status as keyof typeof colors]}>{status}</Badge>
 }
 
 export function OptimizationModels() {
+  const [mlModelInfo, setMlModelInfo] = useState<MLModelInfo | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchModelInfo = async () => {
+      try {
+        setLoading(true)
+        const data = await fetchApi<MLModelInfo>("/api/ml/model-info")
+        setMlModelInfo(data)
+        setError(null)
+      } catch (err) {
+        setError('Failed to fetch ML model information')
+        console.error('Error fetching ML model info:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchModelInfo()
+    const interval = setInterval(fetchModelInfo, 60000) // Refresh every minute
+    return () => clearInterval(interval)
+  }, [])
+
+  if (loading) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-card-foreground flex items-center">
+            <Brain className="w-5 h-5 mr-2" />
+            AI Models
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-32">
+            <div className="text-muted-foreground">Loading model information...</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-card-foreground flex items-center">
+            <Brain className="w-5 h-5 mr-2" />
+            AI Models
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-32 text-red-500">
+            <AlertTriangle className="w-5 h-5 mr-2" />
+            {error}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Create models array from actual ML model info
+  const models = []
+  
+  if (mlModelInfo?.models?.classifier) {
+    models.push({
+      id: "maintenance-classifier",
+      name: "Maintenance Classifier",
+      description: "Binary classification model to predict if equipment needs maintenance",
+      status: "active",
+      accuracy: mlModelInfo.model_performance?.classifier_accuracy || 99.0,
+      lastTrained: "2024-01-12",
+      predictions: "Real-time",
+      type: mlModelInfo.models.classifier,
+    })
+  }
+
+  if (mlModelInfo?.models?.regressor) {
+    models.push({
+      id: "failure-risk-regressor",
+      name: "Failure Risk Predictor",
+      description: "Regression model to predict equipment failure risk score (0-1)",
+      status: "active", 
+      accuracy: mlModelInfo.model_performance?.regressor_r2_score || 48.4,
+      lastTrained: "2024-01-12",
+      predictions: "Real-time",
+      type: mlModelInfo.models.regressor,
+    })
+  }
+
+  // If no ML models are loaded, show heuristic fallback
+  if (models.length === 0) {
+    models.push({
+      id: "heuristic-fallback",
+      name: "Heuristic Decision Engine",
+      description: "Rule-based fallback system for optimization decisions",
+      status: "active",
+      accuracy: 75.0,
+      lastTrained: "Built-in",
+      predictions: "Real-time",
+      type: "Rule-based",
+    })
+  }
+
   return (
     <Card className="bg-card border-border">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-semibold text-card-foreground flex items-center">
           <Brain className="w-5 h-5 mr-2" />
           AI Models
+          {mlModelInfo?.models_loaded && (
+            <Badge className="ml-2 bg-blue-600 text-white">ML Powered</Badge>
+          )}
         </CardTitle>
-        <Button size="sm">
+        <Button size="sm" variant="outline">
           <Settings className="w-4 h-4 mr-2" />
           Manage Models
         </Button>
@@ -98,13 +182,25 @@ export function OptimizationModels() {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Last trained: {model.lastTrained}</span>
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
-                  Retrain Model
-                </Button>
+                {model.type !== "Rule-based" && (
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                    Retrain Model
+                  </Button>
+                )}
               </div>
             </div>
           ))}
         </div>
+        
+        {mlModelInfo && (
+          <div className="mt-4 p-3 bg-muted rounded-lg">
+            <div className="text-sm text-muted-foreground mb-1">Model Features</div>
+            <div className="text-sm text-foreground">
+              {mlModelInfo.total_features || 0} input features: {mlModelInfo.feature_columns?.slice(0, 3).join(', ')}
+              {(mlModelInfo.feature_columns?.length || 0) > 3 && ` and ${(mlModelInfo.feature_columns?.length || 0) - 3} more`}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

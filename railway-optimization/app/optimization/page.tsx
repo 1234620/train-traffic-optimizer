@@ -4,6 +4,7 @@ import { AIOptimizationOverview } from "@/components/optimization/ai-optimizatio
 import { OptimizationModels } from "@/components/optimization/optimization-models"
 import { OptimizationResults } from "@/components/optimization/optimization-results"
 import { OptimizationControls } from "@/components/optimization/optimization-controls"
+import { MaintenancePredictions } from "@/components/ml/maintenance-predictions"
 
 export default function OptimizationPage() {
   return (
@@ -20,14 +21,14 @@ export default function OptimizationPage() {
               </p>
             </div>
 
-            <AIOptimizationOverview />
-
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2 space-y-6">
                 <OptimizationResults />
                 <OptimizationModels />
+                <MaintenancePredictions />
               </div>
-              <div>
+              <div className="space-y-6">
+                <AIOptimizationOverview />
                 <OptimizationControls />
               </div>
             </div>

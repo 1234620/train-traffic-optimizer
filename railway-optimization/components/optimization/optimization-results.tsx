@@ -179,7 +179,7 @@ export function OptimizationResults() {
               <p className="text-sm">AI is analyzing the system...</p>
             </div>
           ) : (
-            optimizations.slice(0, 4).map((decision) => {
+            optimizations.slice(0, 6).map((decision) => {
               const Icon = getTypeIcon(decision.type)
               return (
                 <div key={decision.id} className="p-4 rounded-lg bg-muted">

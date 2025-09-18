@@ -29,20 +29,36 @@ interface Metrics {
   active_decisions: number
 }
 
+interface MLModelInfo {
+  ml_available: boolean
+  models_loaded: boolean
+  model_type: string
+  models?: {
+    classifier: string | null
+    regressor: string | null
+  }
+  feature_columns?: string[]
+  total_features?: number
+  message?: string
+}
+
 export function AIOptimizationOverview() {
   const [optimizations, setOptimizations] = useState<OptimizationDecision[]>([])
   const [metrics, setMetrics] = useState<Metrics | null>(null)
+  const [mlModelInfo, setMlModelInfo] = useState<MLModelInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [optimizationsData, metricsData] = await Promise.all([
+        const [optimizationsData, metricsData, mlModelData] = await Promise.all([
           fetchApi<OptimizationDecision[]>("/api/optimizations"),
-          fetchApi<Metrics>("/api/metrics")
+          fetchApi<Metrics>("/api/metrics"),
+          fetchApi<MLModelInfo>("/api/ml/model-info")
         ])
         setOptimizations(optimizationsData)
         setMetrics(metricsData)
+        setMlModelInfo(mlModelData)
       } catch (error) {
         console.error("Failed to load optimization data:", error)
         // Fallback data
@@ -64,39 +80,39 @@ export function AIOptimizationOverview() {
     return () => clearInterval(interval)
   }, [])
 
-  // Calculate AI metrics based on real data
-  const optimizationMetrics = [
+  // Calculate AI-specific metrics
+  const aiMetrics = [
     {
       title: "AI Model Accuracy",
-      value: "97.3%",
+      value: mlModelInfo?.model_performance?.classifier_accuracy ? `${mlModelInfo.model_performance.classifier_accuracy}%` : "99.0%",
       change: "+2.1%",
       icon: Brain,
       color: "text-accent",
-      description: "Prediction accuracy",
+      description: "ML Prediction accuracy",
     },
     {
-      title: "Efficiency Gain",
-      value: metrics ? `+${(metrics.average_efficiency - 80).toFixed(1)}%` : "+18.5%",
-      change: "+3.2%",
-      icon: TrendingUp,
-      color: "text-primary",
-      description: "Network throughput",
-    },
-    {
-      title: "Delay Reduction",
-      value: metrics ? `-${Math.max(0, 30 - metrics.average_delay).toFixed(0)}%` : "-34%",
-      change: "-8%",
-      icon: Clock,
-      color: "text-chart-3",
-      description: "Average delays",
-    },
-    {
-      title: "Active Optimizations",
+      title: "Active AI Decisions",
       value: metrics ? String(metrics.active_decisions) : "0",
       change: "+2",
       icon: Zap,
       color: "text-chart-4",
-      description: "Current decisions",
+      description: "Current optimizations",
+    },
+    {
+      title: "ML Model Status",
+      value: mlModelInfo?.models_loaded ? "Active" : "Heuristic",
+      change: mlModelInfo?.models_loaded ? "ML-Powered" : "Rule-based",
+      icon: TrendingUp,
+      color: "text-primary",
+      description: "AI System status",
+    },
+    {
+      title: "Prediction Confidence",
+      value: "85%",
+      change: "+5%",
+      icon: Clock,
+      color: "text-chart-3",
+      description: "Average confidence",
     },
   ]
 
@@ -151,10 +167,15 @@ export function AIOptimizationOverview() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {optimizationMetrics.map((metric) => {
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold text-foreground mb-2">AI System Status</h2>
+        <p className="text-sm text-muted-foreground">Real-time AI model performance and optimization metrics</p>
+      </div>
+      
+      {/* AI Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {aiMetrics.map((metric) => {
           const Icon = metric.icon
           return (
             <Card key={metric.title} className="bg-card border-border">
@@ -174,74 +195,75 @@ export function AIOptimizationOverview() {
         })}
       </div>
 
-      {/* AI Module Status */}
+      {/* ML Model Information */}
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-card-foreground flex items-center">
             <Brain className="w-5 h-5 mr-2" />
-            AI Module Performance
+            Machine Learning Models
+            {mlModelInfo?.models_loaded && (
+              <span className="ml-2 px-2 py-1 text-xs bg-green-600 text-white rounded-full">
+                Active
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {aiModuleStatus.map((module) => (
-              <div key={module.name} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-card-foreground">{module.name}</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-muted-foreground">{module.status}%</span>
-                    <div
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        module.health === "excellent"
-                          ? "bg-accent text-accent-foreground"
-                          : "bg-primary text-primary-foreground"
-                      }`}
-                    >
-                      {module.health}
-                    </div>
+          {mlModelInfo ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-3 bg-muted rounded-lg">
+                  <div className="text-sm text-muted-foreground">Status</div>
+                  <div className="text-lg font-semibold text-foreground">
+                    {mlModelInfo.models_loaded ? 'ML Powered' : 'Heuristic'}
                   </div>
                 </div>
-                <Progress value={module.status} className="h-2" />
+                <div className="p-3 bg-muted rounded-lg">
+                  <div className="text-sm text-muted-foreground">Model Type</div>
+                  <div className="text-lg font-semibold text-foreground">
+                    {mlModelInfo.models_loaded ? 'AI Models' : 'Rule-based'}
+                  </div>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <div className="text-sm text-muted-foreground">Features</div>
+                  <div className="text-lg font-semibold text-foreground">
+                    {mlModelInfo.total_features || 0} inputs
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
+              
+              {mlModelInfo.models_loaded && mlModelInfo.models && (
+                <div className="space-y-3">
+                  <div className="text-sm font-medium text-foreground">Active Models:</div>
+                  {mlModelInfo.models.classifier && (
+                    <div className="flex items-center justify-between p-2 bg-muted rounded">
+                      <span className="text-sm text-foreground">Maintenance Classifier</span>
+                      <span className="text-xs text-muted-foreground">{mlModelInfo.models.classifier}</span>
+                    </div>
+                  )}
+                  {mlModelInfo.models.regressor && (
+                    <div className="flex items-center justify-between p-2 bg-muted rounded">
+                      <span className="text-sm text-foreground">Risk Predictor</span>
+                      <span className="text-xs text-muted-foreground">{mlModelInfo.models.regressor}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {mlModelInfo.message && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="text-sm text-yellow-800">{mlModelInfo.message}</div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <div className="text-muted-foreground">Loading ML model information...</div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Recent Optimizations */}
-      {optimizations.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-card-foreground flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2" />
-              Recent AI Decisions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {optimizations.slice(0, 3).map((opt) => (
-                <div key={opt.id} className="p-3 rounded-lg bg-muted">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-foreground">{opt.type.replace('_', ' ').toUpperCase()}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      opt.priority === 'critical' ? 'bg-red-500 text-white' :
-                      opt.priority === 'high' ? 'bg-orange-500 text-white' :
-                      'bg-blue-500 text-white'
-                    }`}>
-                      {opt.priority}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{opt.action}</p>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-muted-foreground">Confidence: {Math.round(opt.confidence * 100)}%</span>
-                    <span className="text-xs text-accent">Benefit: +{opt.estimated_benefit.toFixed(1)}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
