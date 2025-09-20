@@ -5,7 +5,7 @@
 
 # next.js
 /.next/
-/out/
+# /out/ - Commented out to include built frontend in Git
 
 # production
 /build
