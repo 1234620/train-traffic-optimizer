@@ -1136,13 +1136,27 @@ async def startup_event():
     asyncio.create_task(background_updater())
 
 # Serve Next.js static export at the root if built
-try:
-    app.mount("/_next", StaticFiles(directory="railway-optimization/out/_next", html=False), name="_next")
-    app.mount("/public", StaticFiles(directory="railway-optimization/out", html=False), name="public")
+frontend_built = False
+frontend_path = "railway-optimization/out"
 
+# Check if frontend is built
+if os.path.exists(frontend_path) and os.path.exists(f"{frontend_path}/index.html"):
+    try:
+        app.mount("/_next", StaticFiles(directory=f"{frontend_path}/_next", html=False), name="_next")
+        app.mount("/public", StaticFiles(directory=frontend_path, html=False), name="public")
+        frontend_built = True
+        print("✅ Frontend build found - serving Next.js application")
+    except Exception as e:
+        print(f"⚠️ Error mounting frontend files: {e}")
+        frontend_built = False
+else:
+    print("⚠️ Frontend not built - serving API only")
+    print("   To build frontend: cd railway-optimization && npm install && npm run build")
+
+if frontend_built:
     @app.get("/", response_class=HTMLResponse)
     async def serve_index():
-        return FileResponse("railway-optimization/out/index.html")
+        return FileResponse(f"{frontend_path}/index.html")
     
     # Handle SPA routing - serve index.html for all routes that don't exist as files
     @app.get("/{path:path}", response_class=HTMLResponse)
@@ -1152,16 +1166,98 @@ try:
             raise HTTPException(status_code=404, detail="API endpoint not found")
         
         # Check if the file exists
-        file_path = f"railway-optimization/out/{path}"
+        file_path = f"{frontend_path}/{path}"
         if os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
         
         # For SPA routing, serve index.html for all other routes
-        return FileResponse("railway-optimization/out/index.html")
-        
-except Exception as e:
-    print(f"Error setting up static files: {e}")
-    pass
+        return FileResponse(f"{frontend_path}/index.html")
+else:
+    # Fallback: serve a simple HTML page with API documentation
+    @app.get("/", response_class=HTMLResponse)
+    async def serve_fallback():
+        return HTMLResponse("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Railway Optimization API</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+                .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+                .api-list { margin: 20px 0; }
+                .api-item { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #007bff; }
+                .method { background: #007bff; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: bold; }
+                .endpoint { font-family: monospace; font-weight: bold; margin-left: 10px; }
+                .description { color: #666; margin-top: 5px; }
+                .build-instructions { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+                .code { background: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace; margin: 10px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🚂 Railway Optimization API</h1>
+                <p>Welcome to the Railway Traffic Optimization System API. The frontend is not built yet.</p>
+                
+                <div class="build-instructions">
+                    <h3>📋 To build the frontend:</h3>
+                    <div class="code">
+                        cd railway-optimization<br>
+                        npm install<br>
+                        npm run build
+                    </div>
+                    <p>Then restart the backend server to serve the frontend.</p>
+                </div>
+                
+                <h3>🔗 Available API Endpoints:</h3>
+                <div class="api-list">
+                    <div class="api-item">
+                        <span class="method">GET</span>
+                        <span class="endpoint">/api/metrics</span>
+                        <div class="description">Get system metrics and performance data</div>
+                    </div>
+                    <div class="api-item">
+                        <span class="method">GET</span>
+                        <span class="endpoint">/api/trains</span>
+                        <div class="description">Get all train information and status</div>
+                    </div>
+                    <div class="api-item">
+                        <span class="method">GET</span>
+                        <span class="endpoint">/api/tracks</span>
+                        <div class="description">Get track information and utilization</div>
+                    </div>
+                    <div class="api-item">
+                        <span class="method">GET</span>
+                        <span class="endpoint">/api/optimizations</span>
+                        <div class="description">Get AI optimization decisions and recommendations</div>
+                    </div>
+                    <div class="api-item">
+                        <span class="method">GET</span>
+                        <span class="endpoint">/api/ml/maintenance-predictions</span>
+                        <div class="description">Get ML-powered maintenance predictions for all trains</div>
+                    </div>
+                    <div class="api-item">
+                        <span class="method">GET</span>
+                        <span class="endpoint">/api/ml/model-info</span>
+                        <div class="description">Get ML model information and performance metrics</div>
+                    </div>
+                    <div class="api-item">
+                        <span class="method">GET</span>
+                        <span class="endpoint">/api/ml/risk-summary</span>
+                        <div class="description">Get overall system risk summary</div>
+                    </div>
+                    <div class="api-item">
+                        <span class="method">GET</span>
+                        <span class="endpoint">/docs</span>
+                        <div class="description">Interactive API documentation (Swagger UI)</div>
+                    </div>
+                </div>
+                
+                <p><strong>WebSocket:</strong> <code>ws://localhost:8000/ws</code> - Real-time updates</p>
+            </div>
+        </body>
+        </html>
+        """)
 
 if __name__ == "__main__":
     uvicorn.run(
